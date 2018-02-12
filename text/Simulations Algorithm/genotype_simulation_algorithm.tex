@@ -1,0 +1,31 @@
+\documentclass{article}
+
+\usepackage{cmap}
+\usepackage{amsmath,amsthm,amssymb,xparse}
+\usepackage{mathtext}
+\usepackage[T1,T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english,russian]{babel}
+\usepackage{mathtools}
+\usepackage[bibencoding=auto, backend=biber, babel=other]{biblatex}
+\usepackage{csquotes}
+\usepackage{graphicx}
+
+\begin{document}
+
+\setlength{\parindent}{15pt}
+
+\section{Алгоритм симуляции генотипов}
+
+\hspace*{\parindent}
+\begin{enumerate}
+\item Get $p_a$ from $U(0.05, 0.5)$ (uniform distribution)
+\item Set $p_b = 1 - p_a$
+\item Set $D_{ab}$
+\item Find $p_{ab} = D_{ab} - p_a p_b$
+\item Get $w$ from $B(2, p)$ (Binomial distribution with probability $p$)
+\item Standardize genotype: $z := \left( w - 2p \right) \sqrt{2p \left( 1 - p \right)}$
+\item Repeat $1 - 3$ for 10000 people (10000 times)
+\end{enumerate}
+
+\end{document}

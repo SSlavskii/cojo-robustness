@@ -1,0 +1,5 @@
+\boolfalse {citerequest}\boolfalse {citetracker}\boolfalse {pagetracker}\boolfalse {backtracker}\relax 
+\defcounter {refsection}{0}\relax 
+\select@language {russian}
+\defcounter {refsection}{0}\relax 
+\contentsline {section}{\numberline {1}\IeC {\CYRA }\IeC {\cyrl }\IeC {\cyrg }\IeC {\cyro }\IeC {\cyrr }\IeC {\cyri }\IeC {\cyrt }\IeC {\cyrm } \IeC {\cyrs }\IeC {\cyri }\IeC {\cyrm }\IeC {\cyru }\IeC {\cyrl }\IeC {\cyrya }\IeC {\cyrc }\IeC {\cyri }\IeC {\cyri } \IeC {\cyrg }\IeC {\cyre }\IeC {\cyrn }\IeC {\cyro }\IeC {\cyrt }\IeC {\cyri }\IeC {\cyrp }\IeC {\cyro }\IeC {\cyrv }}{1}
