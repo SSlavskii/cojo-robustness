@@ -76,7 +76,7 @@ def run(population_size, freq_a1, freq_b1, d, beta_a, beta_b):
 
     model = smf.ols('phenotype ~ snp_a_gen + snp_b_gen', data=simulated_data).fit()
 
-    return model.params.snp_a_gen, model.params.snp_b_gen
+    return model.params.snp_a_gen / model.bse.snp_a_gen, model.params.snp_b_gen / model.bse.snp_b_gen
 
 
 def main():
@@ -94,7 +94,7 @@ def main():
     beta_a = 0.15
     beta_b = 0.13
 
-    file_out = open("../out/1000_iter_beta1_beta2.csv", 'w')
+    file_out = open("../out/1000_iter_z1_z2.csv", 'w')
 
     for i in range(1000):
         print(i)
