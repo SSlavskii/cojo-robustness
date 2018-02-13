@@ -74,5 +74,4 @@ class TestSimulations(unittest.TestCase):
 
         phenotypes = get_phenotypes(genotypes, BETA_A, BETA_B, POPULATION_SIZE)
 
-        self.assertEqual(np.mean(phenotypes), )
         self.assertEqual(np.mean(phenotypes - np.mean(phenotypes)) ** 2, 1.0)
