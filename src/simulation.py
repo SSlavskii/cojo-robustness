@@ -60,8 +60,23 @@ def get_phenotypes(genotypes, beta_a, beta_b, population_size):
     phenotypes = genotypes[:, 0] * beta_a + genotypes[:, 1] * beta_b + np.random.normal(0,
                                                                                         np.sqrt(sigma_err),
                                                                                         population_size)
-
     return phenotypes
+
+
+def run(population_size, freq_a1, freq_b1, d, beta_a, beta_b):
+
+    haplotypes_prob = get_haplotypes_probabilities(d, freq_a1, freq_b1)
+    haplotypes = get_haplotypes(haplotypes_prob, population_size)
+    genotypes = get_genotypes(haplotypes, population_size)
+    phenotypes = get_phenotypes(genotypes, beta_a, beta_b, population_size)
+
+    simulated_data = pd.DataFrame({"phenotype": phenotypes,
+                                   "snp_a_gen": genotypes[:, 0],
+                                   "snp_b_gen": genotypes[:, 1]})
+
+    model = smf.ols('phenotype ~ snp_a_gen + snp_b_gen', data=simulated_data).fit()
+
+    return model.params.snp_a_gen, model.params.snp_b_gen
 
 
 def main():
@@ -74,17 +89,20 @@ def main():
     r = 0.7
     d = r * np.sqrt(freq_a1 * (1 - freq_a1) * freq_b1 * (1 - freq_b1))
 
+    # Restrictions on D: -min(P_A * P_B, P_a * P_b) <= D <= min(P_A * P_b, P_a * P_B)
+
     beta_a = 0.15
     beta_b = 0.13
 
-    haplotypes_prob = get_haplotypes_probabilities(d, freq_a1, freq_b1)
-    haplotypes = get_haplotypes(haplotypes_prob, population_size)
-    genotypes = get_genotypes(haplotypes, population_size)
-    phenotypes = get_phenotypes(genotypes, beta_a, beta_b, population_size)
+    file_out = open("../out/1000_iter_beta1_beta2.csv", 'w')
 
-    simulated_data = pd.DataFrame({"phenotype": phenotypes,
-                                   "snp_a_gen": genotypes[:, 0],
-                                   "snp_b_gen": genotypes[:, 1]})
+    for i in range(1000):
+        print(i)
+        results = run(population_size, freq_a1, freq_b1, d, beta_a, beta_b)
+        file_out.write(str(results[0]) + ',' + str(results[1]) + '\n')
+
+    file_out.close()
+    return 0
 
 
 if __name__ == "__main__":

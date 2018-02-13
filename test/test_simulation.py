@@ -14,7 +14,15 @@ BETA_B = 0.2
 class TestSimulations(unittest.TestCase):
 
     def test_get_haplotypes_probabilities(self):
-        self.assertAlmostEqual(sum(get_haplotypes_probabilities(D, FREQ_A1, FREQ_B1).values()), 1.0, delta=0.0001)
+
+        haplotypes_prob = get_haplotypes_probabilities(D, FREQ_A1, FREQ_B1)
+
+        self.assertAlmostEqual(sum(haplotypes_prob.values()), 1.0, delta=0.0001)
+
+        self.assertGreaterEqual(haplotypes_prob["a1_b1"], 0.0)
+        self.assertGreaterEqual(haplotypes_prob["a1_b2"], 0.0)
+        self.assertGreaterEqual(haplotypes_prob["a2_b1"], 0.0)
+        self.assertGreaterEqual(haplotypes_prob["a2_b2"], 0.0)
 
     def test_haplotypes_probabilities_vs_frequencies(self):
 
