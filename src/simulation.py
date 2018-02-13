@@ -52,13 +52,14 @@ def get_genotypes(haplotypes, population_size):
 
 def get_phenotypes(genotypes, beta_a, beta_b, population_size):
 
-    phenotypes = []
+    mse_genotypes_a = np.mean((genotypes[:, 0] - np.mean(genotypes[:, 0])) ** 2)
+    mse_genotypes_b = np.mean((genotypes[:, 1] - np.mean(genotypes[:, 1])) ** 2)
 
-    sigma_err = 1 - mse_genotypes_a * beta_a ** 2 - mse_genotypes_b * beta_b ** 2
+    sigma_err = 1.0 - mse_genotypes_a * beta_a ** 2 - mse_genotypes_b * beta_b ** 2
 
-    for i in range(population_size):
-        phenotype = genotypes[i][0] * beta_a + genotypes[i][1] * beta_b + np.random.normal(0, sqrt(sigma_err))
-        phenotypes.append(phenotype)
+    phenotypes = genotypes[:, 0] * beta_a + genotypes[:, 1] * beta_b + np.random.normal(0,
+                                                                                        np.sqrt(sigma_err),
+                                                                                        population_size)
 
     return phenotypes
 
