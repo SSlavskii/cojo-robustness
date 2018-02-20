@@ -1,4 +1,5 @@
 import unittest
+from scipy import stats
 
 from src.simulation import *
 
@@ -16,7 +17,7 @@ class TestSimulations(unittest.TestCase):
     def test_get_haplotypes_probabilities(self):
 
         haplotypes_prob = get_haplotypes_probabilities(D, FREQ_A1, FREQ_B1)
-
+        # TODO: set delta as machine eps
         self.assertAlmostEqual(sum(haplotypes_prob.values()), 1.0, delta=0.0001)
 
         self.assertGreaterEqual(haplotypes_prob["a1_b1"], 0.0)
@@ -33,10 +34,13 @@ class TestSimulations(unittest.TestCase):
 
         haplotypes = get_haplotypes(haplotypes_prob, POPULATION_SIZE)
 
+        # TODO: set delta as function of POPULATION_SIZE
         self.assertAlmostEqual(haplotypes.count(11) / (2 * POPULATION_SIZE), haplotypes_prob["a1_b1"], delta=0.03)
         self.assertAlmostEqual(haplotypes.count(12) / (2 * POPULATION_SIZE), haplotypes_prob["a1_b2"], delta=0.03)
         self.assertAlmostEqual(haplotypes.count(21) / (2 * POPULATION_SIZE), haplotypes_prob["a2_b1"], delta=0.03)
         self.assertAlmostEqual(haplotypes.count(22) / (2 * POPULATION_SIZE), haplotypes_prob["a2_b2"], delta=0.03)
+
+    # TODO: test get_haplotypes with zero probability (D == 1)
 
     def test_allele_freq_genotypes(self):
 
@@ -46,6 +50,7 @@ class TestSimulations(unittest.TestCase):
 
         genotypes = get_genotypes(haplotypes, POPULATION_SIZE)
 
+        # TODO: set delta as function of POPULATION_SIZE
         self.assertAlmostEqual(1 - sum(genotypes[:, 0]) / (2 * POPULATION_SIZE), FREQ_A1, delta=0.03)
         self.assertAlmostEqual(1 - sum(genotypes[:, 1]) / (2 * POPULATION_SIZE), FREQ_B1, delta=0.03)
 
@@ -60,15 +65,23 @@ class TestSimulations(unittest.TestCase):
         mse_genotypes_a = np.mean((genotypes[:, 0] - np.mean(genotypes[:, 0])) ** 2)
         mse_genotypes_b = np.mean((genotypes[:, 1] - np.mean(genotypes[:, 1])) ** 2)
 
+        # TODO: set delta as 5% of mse_genotypes_a(b)
         self.assertAlmostEqual(mse_genotypes_a, 2 * FREQ_A1 * (1 - FREQ_A1), delta=0.03)
         self.assertAlmostEqual(mse_genotypes_b, 2 * FREQ_B1 * (1 - FREQ_B1), delta=0.03)
 
-    def test_phenotypes_mean_sigma(self):
+    def test_genotypes_mean_std(self):
 
-        file_genotypes = open("./resources/genotypes.txt", 'r')
         genotypes = np.loadtxt("./resources/genotypes.txt")
-        file_genotypes.close()
 
-        phenotypes = get_phenotypes(genotypes, BETA_A, BETA_B, POPULATION_SIZE)
+        genotypes_std = standardise_genotypes(genotypes, FREQ_A1, FREQ_B1)
 
-        self.assertAlmostEqual(np.mean((phenotypes - np.mean(phenotypes)) ** 2), 1.0, delta=0.05)
+        self.assertAlmostEqual(np.mean(genotypes_std[:, 0]), 0.0, delta=0.02)
+        self.assertAlmostEqual(np.mean((genotypes_std[:, 0] - np.mean(genotypes_std[:, 0])) ** 2), 1.0, delta=0.02)
+
+    def test_phenotypes_distribution(self):
+
+        genotypes_std = np.loadtxt("./resources/genotypes_std.txt")
+
+        phenotypes = get_phenotypes(genotypes_std, BETA_A, BETA_B, POPULATION_SIZE)
+
+        self.assertGreaterEqual(stats.kstest(phenotypes, 'norm').pvalue, 0.05)

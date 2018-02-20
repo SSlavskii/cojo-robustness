@@ -50,6 +50,14 @@ def get_genotypes(haplotypes, population_size):
     return np.array([list(i) for i in genotypes], dtype='int')
 
 
+def standardise_genotypes(genotypes, freq_a1, freq_b1):
+
+    genotypes_a = (genotypes[:, 0] - 2 * (1 - freq_a1)) / np.sqrt(2 * freq_a1 * (1 - freq_a1))
+    genotypes_b = (genotypes[:, 1] - 2 * (1 - freq_b1)) / np.sqrt(2 * freq_b1 * (1 - freq_b1))
+
+    return np.column_stack((genotypes_a, genotypes_b))
+
+
 def get_phenotypes(genotypes, beta_a, beta_b, population_size):
 
     mse_genotypes_a = np.mean((genotypes[:, 0] - np.mean(genotypes[:, 0])) ** 2)
@@ -68,6 +76,7 @@ def run(population_size, freq_a1, freq_b1, d, beta_a, beta_b):
     haplotypes_prob = get_haplotypes_probabilities(d, freq_a1, freq_b1)
     haplotypes = get_haplotypes(haplotypes_prob, population_size)
     genotypes = get_genotypes(haplotypes, population_size)
+
     phenotypes = get_phenotypes(genotypes, beta_a, beta_b, population_size)
 
     simulated_data = pd.DataFrame({"phenotype": phenotypes,
@@ -81,7 +90,7 @@ def run(population_size, freq_a1, freq_b1, d, beta_a, beta_b):
 
 def main():
 
-    population_size = 10000
+    population_size = 100000
 
     freq_a1 = 0.7
     freq_b1 = 0.6
@@ -94,6 +103,7 @@ def main():
     beta_a = 0.15
     beta_b = 0.13
 
+    """
     file_out = open("../out/1000_iter_z1_z2.csv", 'w')
 
     for i in range(1000):
@@ -102,6 +112,9 @@ def main():
         file_out.write(str(results[0]) + ',' + str(results[1]) + '\n')
 
     file_out.close()
+    """
+
+    _ = run(population_size, freq_a1, freq_b1, d, beta_a, beta_b)
     return 0
 
 
