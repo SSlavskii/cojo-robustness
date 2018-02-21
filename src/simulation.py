@@ -1,10 +1,20 @@
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from matplotlib import cm
-from mpl_toolkits.mplot3d import axes3d
-import statsmodels.api as sm
-import statsmodels.formula.api as smf
+from src.plotting import *
+
+
+POPULATION_SIZE = 100000
+
+FREQ_A1 = 0.7
+FREQ_B1 = 0.6
+
+R = 0.7
+D = R * np.sqrt(FREQ_A1 * (1 - FREQ_A1) * FREQ_B1 * (1 - FREQ_B1))
+
+# Restrictions on D: -min(P_A * P_B, P_a * P_b) <= D <= min(P_A * P_b, P_a * P_B)
+
+BETA_A = 0.15
+BETA_B = 0.13
+
+NUMBER_OF_ITERATIONS = 1000
 
 
 def get_haplotypes_probabilities(d, freq_a1, freq_b1):
@@ -21,33 +31,20 @@ def get_haplotypes_probabilities(d, freq_a1, freq_b1):
 
 def get_haplotypes(haplotypes_prob, population_size):
 
-    haplotypes = []
-
-    for counter in range(2 * population_size):
-
-        x = float(np.random.uniform(0, 1, 1))
-        if x < haplotypes_prob["a1_b1"]:
-            haplotypes.append(11)
-        elif x < haplotypes_prob["a1_b1"] + haplotypes_prob["a1_b2"]:
-            haplotypes.append(12)
-        elif x < haplotypes_prob["a1_b1"] + haplotypes_prob["a1_b2"] + haplotypes_prob["a2_b1"]:
-            haplotypes.append(21)
-        else:
-            haplotypes.append(22)
+    possible_haplotypes = [11, 12, 21, 22]
+    haplotypes = np.random.choice(possible_haplotypes,
+                                  size=2 * population_size,
+                                  p=list(haplotypes_prob.values()))
 
     return haplotypes
 
 
 def get_genotypes(haplotypes, population_size):
 
-    genotypes = []
+    genotypes_a = haplotypes[:population_size] // 10 + haplotypes[population_size:] // 10 - 2
+    genotypes_b = haplotypes[:population_size] % 10 + haplotypes[population_size:] % 10 - 2
 
-    for i in range(population_size):
-        genotype = str(haplotypes[i] // 10 + haplotypes[i + population_size] // 10 - 2)
-        genotype += str(haplotypes[i] % 10 + haplotypes[i + population_size] % 10 - 2)
-        genotypes.append(genotype)
-
-    return np.array([list(i) for i in genotypes], dtype='int')
+    return np.column_stack((genotypes_a, genotypes_b))
 
 
 def standardise_genotypes(genotypes, freq_a1, freq_b1):
@@ -83,6 +80,8 @@ def run(population_size, freq_a1, freq_b1, d, beta_a, beta_b):
                                    "snp_a_gen": genotypes[:, 0],
                                    "snp_b_gen": genotypes[:, 1]})
 
+    # plot_simulated_data_with_regressions(simulated_data)
+
     model = smf.ols('phenotype ~ snp_a_gen + snp_b_gen', data=simulated_data).fit()
 
     return model.params.snp_a_gen / model.bse.snp_a_gen, model.params.snp_b_gen / model.bse.snp_b_gen
@@ -90,31 +89,18 @@ def run(population_size, freq_a1, freq_b1, d, beta_a, beta_b):
 
 def main():
 
-    population_size = 100000
+    joint_z1_z2 = {"z1": [], "z2": []}
 
-    freq_a1 = 0.7
-    freq_b1 = 0.6
-
-    r = 0.7
-    d = r * np.sqrt(freq_a1 * (1 - freq_a1) * freq_b1 * (1 - freq_b1))
-
-    # Restrictions on D: -min(P_A * P_B, P_a * P_b) <= D <= min(P_A * P_b, P_a * P_B)
-
-    beta_a = 0.15
-    beta_b = 0.13
-
-    """
-    file_out = open("../out/1000_iter_z1_z2.csv", 'w')
-
-    for i in range(1000):
+    for i in range(NUMBER_OF_ITERATIONS):
         print(i)
-        results = run(population_size, freq_a1, freq_b1, d, beta_a, beta_b)
-        file_out.write(str(results[0]) + ',' + str(results[1]) + '\n')
+        results = run(POPULATION_SIZE, FREQ_A1, FREQ_B1, D, BETA_A, BETA_B)
+        joint_z1_z2["z1"].append(results[0])
+        joint_z1_z2["z2"].append(results[1])
 
-    file_out.close()
-    """
+    joint_z1_z2 = pd.DataFrame.from_dict(joint_z1_z2)
 
-    _ = run(population_size, freq_a1, freq_b1, d, beta_a, beta_b)
+    plot_joint_z1_z2(joint_z1_z2)
+
     return 0
 
 
