@@ -1,5 +1,4 @@
 import unittest
-import numpy as np
 from scipy import stats
 
 from src.simulation import *
@@ -49,7 +48,7 @@ class TestSimulations(unittest.TestCase):
                                haplotypes_prob["a2_b2"],
                                delta=0.03)
 
-    # TODO: test get_haplotypes with zero probability (D == 1)
+    # TODO: test get_haplotypes with zero probability (D == 1) ???
 
     def test_allele_freq_genotypes(self):
         haplotypes = np.genfromtxt("./resources/haplotypes.txt", delimiter=',')
@@ -88,3 +87,7 @@ class TestSimulations(unittest.TestCase):
         phenotypes = get_phenotypes(genotypes_std, BETA_A, BETA_B, POPULATION_SIZE)
 
         self.assertGreaterEqual(stats.kstest(phenotypes, 'norm').pvalue, 0.05)
+
+    # TODO: test equality of R between SNPs and R of z-scores
+    def test_corr_coef(self):
+        self.assertEqual(True, False)

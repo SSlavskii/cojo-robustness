@@ -53,10 +53,12 @@ def plot_simulated_data_with_regressions(simulated_data):
 
     for gen_a in range(3):
         for gen_b in range(3):
+            """
             print("gen_a =", gen_a,
                   ", gen_b =", gen_b,
                   ", mean =", simulated_data[(simulated_data.snp_a_gen == gen_a) &
                                              (simulated_data.snp_b_gen == gen_b)].phenotype.mean())
+            """
             ax.scatter(xs=[gen_a],
                        ys=[gen_b],
                        zs=[simulated_data[(simulated_data.snp_a_gen == gen_a) &
@@ -64,8 +66,8 @@ def plot_simulated_data_with_regressions(simulated_data):
                        color='r',
                        zorder=10)
 
-    print(simulated_data[(simulated_data.snp_a_gen == 2) &
-                         (simulated_data.snp_b_gen == 2)].phenotype.mean())
+    # print(simulated_data[(simulated_data.snp_a_gen == 2) &
+    #                      (simulated_data.snp_b_gen == 2)].phenotype.mean())
 
     for gen in range(3):
         ax.plot([gen],
@@ -96,18 +98,15 @@ def plot_simulated_data_with_regressions(simulated_data):
 
     fig.colorbar(plane, shrink=0.5, aspect=20, ticks=[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7])
 
-    # fig.savefig("./multivariate_regression_on_simulated_data.pdf", dpi=300)
-    # fig.savefig("./multivariate_regression_on_simulated_data.png", dpi=300)
+    fig.savefig("../out/multivariate_regression_on_simulated_data.pdf", dpi=300)
+    fig.savefig("../out/multivariate_regression_on_simulated_data.png", dpi=300)
 
     plt.show()
     plt.close(fig)
 
 
 def plot_joint_z1_z2(joint_z1_z2):
-    # joint_z1_z2 = pd.read_csv("../out/1000_iter_z1_z2.csv", names="z1 z2".split())
 
-    print(joint_z1_z2.head())
-
-    g = sns.jointplot("z1", "z2", data=joint_z1_z2, kind="kde", space=0, color="g")
-    g.savefig("../out/joint_dist_z1_z2_1000_iter.png", dpi=300)
+    g = sns.jointplot("z1", "z2", data=joint_z1_z2, kind="kde", space=0)
+    # g.savefig("../out/joint_dist_z1_z2_1000_iter.png", dpi=300)
     plt.show()
