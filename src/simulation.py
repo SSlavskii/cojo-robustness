@@ -47,6 +47,14 @@ def standardise_genotypes(genotypes, freq_a1, freq_b1):
     return np.column_stack((genotypes_a, genotypes_b))
 
 
+def standardise_genotypes_paper(genotypes, freq_a1, freq_b1):
+
+    genotypes_a = genotypes[:, 0] - 2 * (1 - freq_a1)
+    genotypes_b = genotypes[:, 1] - 2 * (1 - freq_b1)
+
+    return np.column_stack((genotypes_a, genotypes_b))
+
+
 def get_phenotypes(genotypes, beta_a, beta_b, population_size):
 
     mse_genotypes_a = np.mean((genotypes[:, 0] - np.mean(genotypes[:, 0])) ** 2)
@@ -81,13 +89,12 @@ def get_simulated_data(population_size, freq_a1, freq_b1, r, d, beta_a, beta_b):
     genotypes_std = standardise_genotypes(genotypes, freq_a1, freq_b1)
     phenotypes = get_phenotypes(genotypes, beta_a, beta_b, population_size)
 
-    print(np.asmatrix(genotypes_std).T * np.asmatrix(genotypes_std))
+    # print("G_std^T G_std = \n", np.asmatrix(genotypes_std).transpose() * np.asmatrix(genotypes_std))
+    # print("G^T G = \n", np.asmatrix(genotypes).transpose() * np.asmatrix(genotypes))
 
     simulated_data = pd.DataFrame({"phenotype": phenotypes,
                                    "snp_a_gen": genotypes_std[:, 0],
                                    "snp_b_gen": genotypes_std[:, 1]})
-
-    print(simulated_data)
 
     return simulated_data
 
@@ -139,7 +146,6 @@ def run(population_size, freq_a1, freq_b1, r, d, beta_a, beta_b):
 
 
 def main():
-
     """
     joint_z1_z2 = {"z1": [], "z2": []}
 
