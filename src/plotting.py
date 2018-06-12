@@ -11,7 +11,7 @@ sns.set(style="white", color_codes=True)
 
 
 def plot_simulated_data_with_regressions(simulated_data):
-    fig = plt.figure(figsize=(20, 15))
+    fig = plt.figure(figsize=(15, 10))
     ax = fig.gca(projection="3d")
 
     ax.plot(simulated_data.snp_a_gen,

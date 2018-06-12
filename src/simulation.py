@@ -1,6 +1,11 @@
 import logging
 from src.plotting import *
 
+
+FREQ_A1 = 0.7
+FREQ_B1 = 0.6
+
+
 LOG_FILE = "../logs/cojo_simulations.log"
 
 logging.basicConfig(format=u'%(filename)s[LINE:%(lineno)d]# %(levelname)-8s %(asctime)s %(message)s',
@@ -108,12 +113,14 @@ def get_gwas(simulated_data):
     print(model.summary())
 
     gwas_dict = {"snp_num": ['a', 'b'],
+                 "freq1": [FREQ_A1, FREQ_B1],
+                 "freq2": [1 - FREQ_A1, 1 - FREQ_B1],
                  "beta": [model_a.params.snp_a_gen, model_b.params.snp_b_gen],
                  "se": [model_a.bse.snp_a_gen, model_b.bse.snp_b_gen],
                  "p": [model_a.pvalues[0], model_b.pvalues[0]]}
 
     gwas = pd.DataFrame.from_dict(gwas_dict)
-    gwas = gwas[["snp_num", "beta", "se", "p"]]
+    gwas = gwas[["snp_num", "freq1", "freq2", "beta", "se", "p"]]
     gwas["z_u"] = gwas["beta"] / gwas["se"]
     return gwas
 

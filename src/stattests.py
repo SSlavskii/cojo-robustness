@@ -1,4 +1,5 @@
 from src.simulation import *
+# from scipy import
 from numpy.linalg import inv
 from scipy.linalg import sqrtm
 
@@ -26,6 +27,7 @@ NUMBER_OF_ITERATIONS = 1000
 
 
 def joint_test(gwas, ref_r):
+    """
     R = np.matrix([[1.0, ref_r],
                    [ref_r, 1.0]])
 
@@ -35,11 +37,25 @@ def joint_test(gwas, ref_r):
 
     z_m = inv(R) * sqrtm(R) * z_u
     print("z_m = \n", z_m)
+    """
+    # calculating Q-statistic
+    print(gwas)
+    q_stat = sum(gwas["z_u"] ** 2) * 2 / POPULATION_SIZE
+
+    print("q  _value =", q_stat)
+    # Checking whether Q-statistic is chi-squared distributed
+    # critical value approach
+
+    return 0
+
+
+def conditional_test(gwas):
+
     return 0
 
 
 def main():
-    logging.info("Simulating GWAS using following parameters: \n"
+    logging.info("Simulating GWAS using following parameters : \n"
                  "\t POPULATION_SIZE = {population_size} \n"
                  "\t FREQ_A1 = {freq_a1} \n"
                  "\t FREQ_B1 = {freq_b1} \n"
