@@ -3,7 +3,9 @@ from scipy.linalg import sqrtm
 
 from src.simulation import *
 
+
 NUMBER_OF_SNPS = 2
+
 POPULATION_SIZE = 100000
 REF_POPULATION_SIZE = 100000
 
@@ -26,22 +28,21 @@ BETA_B = 0.2
 NUMBER_OF_ITERATIONS = 1000
 
 
-def joint_test(gwas, phenotypes):
+def joint_test(gwas, population_size, ref_population_size, ref_r):
 
     # D_x_std = np.diag(np.diag(np.asmatrix(genotypes_std).transpose() * np.asmatrix(genotypes_std)))
-    # print("D_x_std = \n", D_x_std)
-    D_x_hw = np.matrix([[POPULATION_SIZE, 0.0],
-                        [0.0, POPULATION_SIZE]])
-    # print("D_x_hw = \n", D_x_hw)
+
+    D_x_hw = np.matrix([[population_size, 0.0],
+                        [0.0, population_size]])
 
     # D_w_std = D_x_std.copy()
-    D_w_hw = np.asarray(np.matrix([[REF_POPULATION_SIZE, 0.0],
-                                   [0.0, REF_POPULATION_SIZE]]))
+    D_w_hw = np.asarray(np.matrix([[ref_population_size, 0.0],
+                                   [0.0, ref_population_size]]))
 
     # print("D_w_hw = \n", D_w_hw)
 
-    W_t_W = REF_POPULATION_SIZE * np.matrix([[1.0, REF_R],
-                                             [REF_R, 1.0]])
+    W_t_W = ref_population_size * np.matrix([[1.0, ref_r],
+                                             [ref_r, 1.0]])
     # print("W_t_W = \n", W_t_W)
 
     # B_std = sqrtm(D_x_std) * inv(sqrtm(D_w_std)) * W_t_W * inv(sqrtm(D_w_std)) * sqrtm(D_x_std)
@@ -56,45 +57,46 @@ def joint_test(gwas, phenotypes):
     # print("beta_joint_std = \n", joint_beta_std)
     joint_beta_hw = inv(B_hw) * D_x_hw * beta_gwas
     joint_beta_hw.shape = (1, 2)
-    print("beta_joint_hw =", joint_beta_hw)
+    # print("beta_joint_hw =", joint_beta_hw)
 
     beta_gwas.shape = (1, 2)
 
-    y_t_y = np.mean(np.multiply(D_w_hw.diagonal(), np.square(gwas["se"])) * (POPULATION_SIZE - 1) +
+    y_t_y = np.mean(np.multiply(D_w_hw.diagonal(), np.square(gwas["se"])) * (population_size - 1) +
                     np.multiply(D_w_hw.diagonal(), np.square(gwas["beta"])))
 
     beta_gwas.shape = (2, 1)
     sigma_sqr_joint = float((y_t_y - np.dot(np.dot(joint_beta_hw, D_w_hw), beta_gwas)) /
-                            (POPULATION_SIZE - NUMBER_OF_SNPS))
+                            (population_size - NUMBER_OF_SNPS))
 
-    sigma_sqr_joint_ph = float((np.dot(phenotypes, phenotypes) - np.dot(np.dot(joint_beta_hw, D_w_hw), beta_gwas)) /
-                               (POPULATION_SIZE - NUMBER_OF_SNPS))
+    # sigma_sqr_joint_ph = float((np.dot(phenotypes, phenotypes) - np.dot(np.dot(joint_beta_hw, D_w_hw), beta_gwas)) /
+    #                            (POPULATION_SIZE - NUMBER_OF_SNPS))
 
     joint_se = sigma_sqr_joint * inv(B_hw)
-    print("joint_se =", np.diag(joint_se))
+    # print("joint_se =", np.diag(joint_se))
     joint_beta_hw.shape = (1, 2)
-    print("z_scores =", np.divide(joint_beta_hw, np.diag(joint_se)))
+    # print("z_scores =", np.divide(joint_beta_hw, np.diag(joint_se)))
 
     return joint_beta_hw, joint_se
 
 
-def conditional_test(gwas, y, r_ref):
-    B1 = 2 * REF_FREQ_A1 * (1 - REF_FREQ_A1) * REF_POPULATION_SIZE * REF_POPULATION_SIZE ** 2
-    B2 = 2 * REF_FREQ_A1 * (1 - REF_FREQ_A1) * REF_POPULATION_SIZE * REF_POPULATION_SIZE ** 2
-    D1_x = POPULATION_SIZE
-    D2_x = POPULATION_SIZE
-    c11 = 2 * FREQ_A1 * (1 - FREQ_A1) * POPULATION_SIZE
-    c22 = 2 * FREQ_B1 * (1 - FREQ_B1) * POPULATION_SIZE
-    c21 = 2 * POPULATION_SIZE / REF_POPULATION_SIZE * np.sqrt(FREQ_A1)
+def conditional_test(gwas, y, r_ref, ref_freq_a1, population_size, ref_population_size):
+    B1 = 2 * ref_freq_a1 * (1 - ref_freq_a1) * ref_population_size * ref_population_size ** 2
+    B2 = 2 * ref_freq_a1 * (1 - ref_freq_a1) * ref_population_size * ref_population_size ** 2
+    D1_x = population_size
+    D2_x = population_size
+    c11 = 2 * FREQ_A1 * (1 - FREQ_A1) * population_size
+    c22 = 2 * FREQ_B1 * (1 - FREQ_B1) * population_size
+    c21 = 2 * population_size / ref_population_size * np.sqrt(FREQ_A1)
     C = np.matrix([[c11, c21],
                    [c21, c22]])
 
     con_beta21 = (1 / B2) * D2_x * gwas["beta"][2] - (1 / B2) * C * (1 / B1) * D1_x * gwas["beta"][1]
-    sigma_sqr_cond = (np.dot(y, y) - 1.0 - con_beta21 * 1.0) / (POPULATION_SIZE - 2)
+    sigma_sqr_cond = (np.dot(y, y) - 1.0 - con_beta21 * 1.0) / (population_size - 2)
     con_se = 0.0 * sigma_sqr_cond
     return con_beta21, con_se
 
 
+"""
 def main():
     logging.info("Simulating GWAS using following parameters: \n"
                  "\t POPULATION_SIZE = {population_size} \n"
@@ -131,9 +133,10 @@ def main():
     # gwas = simulate_gwas(POPULATION_SIZE, FREQ_A1, FREQ_B1, R, D, BETA_A, BETA_B)
 
     logging.info('Simulated GWAS: \n' + gwas.to_string())
-    joint_test(gwas, phenotypes)
+    joint_test(gwas)
     return None
 
 
 if __name__ == "__main__":
     main()
+"""

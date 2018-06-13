@@ -1,5 +1,8 @@
 import logging
-from src.plotting import *
+import numpy as np
+import pandas as pd
+import statsmodels.formula.api as smf
+from scipy.stats import chi2
 
 
 FREQ_A1 = 0.7
@@ -86,7 +89,7 @@ def check_correct_input(freq_a1, freq_b1, r, d):
     return check_freq_a1 and check_freq_b1 and check_r and check_d
 
 
-def get_simulated_data(population_size, freq_a1, freq_b1, r, d, beta_a, beta_b):
+def get_simulated_data(population_size, freq_a1, freq_b1, d, beta_a, beta_b):
 
     haplotypes_prob = get_haplotypes_probabilities(d, freq_a1, freq_b1)
     haplotypes = get_haplotypes(haplotypes_prob, population_size)
@@ -110,14 +113,15 @@ def get_gwas(simulated_data):
     model_b = smf.ols("phenotype ~ snp_b_gen", data=simulated_data).fit()
 
     model = smf.ols('phenotype ~ snp_a_gen + snp_b_gen', data=simulated_data).fit()
-    print(model.summary())
+    # print(model.summary())
 
-    gwas_dict = {"snp_num": ['a', 'b'],
+    gwas_dict = {"snp_num": [1, 2],
                  "freq1": [FREQ_A1, FREQ_B1],
                  "freq2": [1 - FREQ_A1, 1 - FREQ_B1],
                  "beta": [model_a.params.snp_a_gen, model_b.params.snp_b_gen],
                  "se": [model_a.bse.snp_a_gen, model_b.bse.snp_b_gen],
-                 "p": [model_a.pvalues[0], model_b.pvalues[0]]}
+                 "p": [chi2.sf(model_a.params.snp_a_gen / model_a.bse.snp_a_gen, 1),
+                       chi2.sf(model_b.params.snp_b_gen / model_b.bse.snp_b_gen, 1)]}
 
     gwas = pd.DataFrame.from_dict(gwas_dict)
     gwas = gwas[["snp_num", "freq1", "freq2", "beta", "se", "p"]]
@@ -125,8 +129,8 @@ def get_gwas(simulated_data):
     return gwas
 
 
-def simulate_gwas(population_size, freq_a1, freq_b1, r, d, beta_a, beta_b):
-    return get_gwas(get_simulated_data(population_size, freq_a1, freq_b1, r, d, beta_a, beta_b))
+def simulate_gwas(population_size, freq_a1, freq_b1, d, beta_a, beta_b):
+    return get_gwas(get_simulated_data(population_size, freq_a1, freq_b1, d, beta_a, beta_b))
 
 
 def run(population_size, freq_a1, freq_b1, r, d, beta_a, beta_b):
@@ -135,7 +139,7 @@ def run(population_size, freq_a1, freq_b1, r, d, beta_a, beta_b):
         print("Input error!")
         exit()
 
-    simulated_data = get_simulated_data(population_size, freq_a1, freq_b1, r, d, beta_a, beta_b)
+    simulated_data = get_simulated_data(population_size, freq_a1, freq_b1, d, beta_a, beta_b)
 
     # plot_simulated_data_with_regressions(simulated_data)
     # model = smf.ols('phenotype ~ snp_a_gen + snp_b_gen', data=simulated_data).fit()
@@ -152,8 +156,9 @@ def run(population_size, freq_a1, freq_b1, r, d, beta_a, beta_b):
     return model_a.params.snp_a_gen / model_a.bse.snp_a_gen, model_b.params.snp_b_gen / model_b.bse.snp_b_gen
 
 
+"""
 def main():
-    """
+    
     joint_z1_z2 = {"z1": [], "z2": []}
 
     for i in range(NUMBER_OF_ITERATIONS):
@@ -165,7 +170,6 @@ def main():
     joint_z1_z2 = pd.DataFrame.from_dict(joint_z1_z2)
 
     plot_joint_z1_z2(joint_z1_z2)
-    """
 
     simulated_data = get_simulated_data(POPULATION_SIZE, FREQ_A1, FREQ_B1, R, D, BETA_A, BETA_B)
     gwas = get_gwas(simulated_data)
@@ -175,3 +179,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+"""
