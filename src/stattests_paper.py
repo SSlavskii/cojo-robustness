@@ -71,7 +71,7 @@ def joint_test(gwas, population_size, ref_population_size, ref_r):
     # sigma_sqr_joint_ph = float((np.dot(phenotypes, phenotypes) - np.dot(np.dot(joint_beta_hw, D_w_hw), beta_gwas)) /
     #                            (POPULATION_SIZE - NUMBER_OF_SNPS))
 
-    joint_se = sigma_sqr_joint * inv(B_hw)
+    joint_se = np.sqrt(np.diag(sigma_sqr_joint * inv(B_hw)))
     # print("joint_se =", np.diag(joint_se))
     joint_beta_hw.shape = (1, 2)
     # print("z_scores =", np.divide(joint_beta_hw, np.diag(joint_se)))

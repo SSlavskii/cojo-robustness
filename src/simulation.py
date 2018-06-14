@@ -5,10 +5,6 @@ import statsmodels.formula.api as smf
 from scipy.stats import chi2
 
 
-FREQ_A1 = 0.7
-FREQ_B1 = 0.6
-
-
 LOG_FILE = "../logs/cojo_simulations.log"
 
 logging.basicConfig(format=u'%(filename)s[LINE:%(lineno)d]# %(levelname)-8s %(asctime)s %(message)s',
@@ -107,21 +103,21 @@ def get_simulated_data(population_size, freq_a1, freq_b1, d, beta_a, beta_b):
     return simulated_data
 
 
-def get_gwas(simulated_data):
+def get_gwas(simulated_data, freq_a1, freq_b1):
 
     model_a = smf.ols("phenotype ~ snp_a_gen", data=simulated_data).fit()
     model_b = smf.ols("phenotype ~ snp_b_gen", data=simulated_data).fit()
 
-    model = smf.ols('phenotype ~ snp_a_gen + snp_b_gen', data=simulated_data).fit()
+    # model = smf.ols('phenotype ~ snp_a_gen + snp_b_gen', data=simulated_data).fit()
     # print(model.summary())
 
     gwas_dict = {"snp_num": [1, 2],
-                 "freq1": [FREQ_A1, FREQ_B1],
-                 "freq2": [1 - FREQ_A1, 1 - FREQ_B1],
+                 "freq1": [freq_a1, freq_b1],
+                 "freq2": [1 - freq_a1, 1 - freq_b1],
                  "beta": [model_a.params.snp_a_gen, model_b.params.snp_b_gen],
                  "se": [model_a.bse.snp_a_gen, model_b.bse.snp_b_gen],
-                 "p": [chi2.sf(model_a.params.snp_a_gen / model_a.bse.snp_a_gen, 1),
-                       chi2.sf(model_b.params.snp_b_gen / model_b.bse.snp_b_gen, 1)]}
+                 "p": [chi2.sf((model_a.params.snp_a_gen / model_a.bse.snp_a_gen) ** 2, 1),
+                       chi2.sf((model_b.params.snp_b_gen / model_b.bse.snp_b_gen) ** 2, 1)]}
 
     gwas = pd.DataFrame.from_dict(gwas_dict)
     gwas = gwas[["snp_num", "freq1", "freq2", "beta", "se", "p"]]
@@ -130,7 +126,7 @@ def get_gwas(simulated_data):
 
 
 def simulate_gwas(population_size, freq_a1, freq_b1, d, beta_a, beta_b):
-    return get_gwas(get_simulated_data(population_size, freq_a1, freq_b1, d, beta_a, beta_b))
+    return get_gwas(get_simulated_data(population_size, freq_a1, freq_b1, d, beta_a, beta_b), freq_a1, freq_b1)
 
 
 def run(population_size, freq_a1, freq_b1, r, d, beta_a, beta_b):
