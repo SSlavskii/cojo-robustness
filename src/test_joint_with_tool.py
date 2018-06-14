@@ -9,8 +9,8 @@ logging.basicConfig(format=u'%(filename)s[LINE:%(lineno)d]# %(levelname)-8s %(as
                     filename=LOG_FILE)
 
 NUMBER_OF_SNPS = 2
-POPULATION_SIZE = 100000
-REF_POPULATION_SIZE = 100000
+POPULATION_SIZE = 10000  # 100000
+REF_POPULATION_SIZE = 10000  # 100000
 
 FREQ_A1 = 0.7
 FREQ_B1 = 0.6
@@ -26,8 +26,10 @@ COEFF_R_D = np.sqrt(REF_FREQ_A1 * (1 - REF_FREQ_A1) * REF_FREQ_B1 * (1 - REF_FRE
 # REF_D = REF_R * COEFF_R_D
 # Restrictions on D: -min(P_A * P_B, P_a * P_b) <= D <= min(P_A * P_b, P_a * P_B)
 
-BETA_A = 0.04
-BETA_B = -0.02
+BETA_A = 0.4
+BETA_B = -0.2
+
+P_VALUE_THRESHOLD = 0.1
 
 
 def generate_ped(genotypes, phenotypes):
@@ -70,16 +72,18 @@ def generate_ped(genotypes, phenotypes):
 
 def main():
 
+    """
     plotting_data = {"beta1": [], "se1": [], "p1": [],
                      "beta2": [], "se2": [], "p2": [],
                      "beta1_tool": [], "se1_tool": [], "p1_tool": [],
                      "beta2_tool": [], "se2_tool": [], "p2_tool": [],
                      "r": []}
-    r_iter = np.linspace(0.2, 0.85, 30)
+
+    r_iter = np.linspace(0.6, 0.6, 1)
     for REF_R in r_iter:
         REF_D = REF_R * COEFF_R_D
         print("REF_R =", REF_R)
-        for i in range(5):
+        for i in range(3):
             print("\ti =", i + 1)
             gwas = simulate_gwas(POPULATION_SIZE, FREQ_A1, FREQ_B1, D, BETA_A, BETA_B)
             joint_beta, joint_se = joint_test(gwas=gwas,
@@ -138,7 +142,8 @@ def main():
     print(plotting_data.head())
     plotting_data.to_csv("../data/test_diff_r.tsv", sep='\t', header=True, index=False)
 
-    """     
+    """
+
     logging.info("\n********************************************** \n"
                  "Simulating GWAS using following parameters: \n"
                  "\t POPULATION_SIZE = {population_size} \n"
@@ -155,16 +160,21 @@ def main():
                                                   beta_a=BETA_A,
                                                   beta_b=BETA_B))
 
-    gwas = simulate_gwas(POPULATION_SIZE, FREQ_A1, FREQ_B1, D, BETA_A, BETA_B)
+    haplotypes_prob = get_haplotypes_probabilities(D, FREQ_A1, FREQ_B1)
+    haplotypes = get_haplotypes(haplotypes_prob, POPULATION_SIZE)
+    genotypes = get_genotypes(haplotypes, POPULATION_SIZE)
+    genotypes_std = standardise_genotypes(genotypes, FREQ_A1, FREQ_B1)
+    phenotypes = get_phenotypes(genotypes, BETA_A, BETA_B, POPULATION_SIZE)
+
+    simulated_data = pd.DataFrame({"phenotype": phenotypes,
+                                   "snp_a_gen": genotypes_std[:, 0],
+                                   "snp_b_gen": genotypes_std[:, 1]})
+
+    gwas = get_gwas(simulated_data,
+                    freq_a1=1 - sum(genotypes[:, 0]) / (2 * POPULATION_SIZE),
+                    freq_b1=1 - sum(genotypes[:, 1]) / (2 * POPULATION_SIZE))
+
     logging.info("\nSimulated summary statistics: \n\t {gwas}\n".format(gwas=gwas))
-    joint_beta, joint_se = joint_test(gwas=gwas,
-                                      population_size=POPULATION_SIZE,
-                                      ref_population_size=REF_POPULATION_SIZE,
-                                      ref_r=REF_R)
-    joint_beta = list(joint_beta.flat)
-    logging.info("\nJoint test results: "
-                 "\n\tjoint_beta={joint_beta} \n\tjoint_se={joint_se}\n".format(joint_beta=joint_beta,
-                                                                                joint_se=np.diag(joint_se)))
 
     gwas['A1'] = ['A', 'A']
     gwas['A2'] = ['T', 'T']
@@ -173,30 +183,13 @@ def main():
     ma_data = gwas[["snp_num", "A1", "A2", "freq1", "beta", "se", "p", "N"]]
     ma_data.to_csv("../data/cojo_tool_test_run.ma", sep='\t', header=True, index=False)
 
-    logging.info("\nSimulating reference using following parameters: \n"
-                 "\t REF_POPULATION_SIZE = {ref_population_size} \n"
-                 "\t REF_FREQ_A1 = {ref_freq_a1} \n"
-                 "\t REF_FREQ_B1 = {ref_freq_b1} \n"
-                 "\t REF_R = {ref_r} \n"
-                 "\t REF_D = {ref_d} \n".format(ref_population_size=REF_POPULATION_SIZE,
-                                                ref_freq_a1=REF_FREQ_A1,
-                                                ref_freq_b1=REF_FREQ_B1,
-                                                ref_r=REF_R,
-                                                ref_d=REF_D))
-    
-    haplotypes_prob_ref = get_haplotypes_probabilities(REF_D, REF_FREQ_A1, REF_FREQ_B1)
-    haplotypes_ref = get_haplotypes(haplotypes_prob_ref, REF_POPULATION_SIZE)
-    genotypes_ref = get_genotypes(haplotypes_ref, REF_POPULATION_SIZE)
-    # genotypes_std_ref = standardise_genotypes(genotypes_ref, REF_FREQ_A1, REF_FREQ_B1)
-    phenotypes_ref = get_phenotypes(genotypes_ref, BETA_A, BETA_B, REF_POPULATION_SIZE)
-
-    ped_data = generate_ped(genotypes_ref, phenotypes_ref)
+    ped_data = generate_ped(genotypes, phenotypes)
     ped_data.to_csv("../data/cojo_tool_test_run.ped", sep='\t', header=False, index=False)
 
     os.system("../tools/plink-1.07-x86_64/plink --file ../data/cojo_tool_test_run "
-              "--make-bed --out ../data/cojo_tool_test_run --noweb --no-parents --no-sex")
+              "--make-bed --out ../data/cojo_tool_test_run --noweb --no-parents --no-sex > /dev/null")
     os.system("../tools/gcta/gcta64 --bfile ../data/cojo_tool_test_run "
-              "--cojo-file ../data/cojo_tool_test_run.ma --cojo-joint --out ../data/test_out")
+              "--cojo-file ../data/cojo_tool_test_run.ma --cojo-joint --out ../data/test_out > /dev/null")
 
     file_gcta_out = open("../data/test_out.jma.cojo")
     file_gcta_out.readline()
@@ -208,7 +201,22 @@ def main():
                  "\n\tjoint_beta_tool={joint_beta_tool} "
                  "\n\tjoint_se_tool={joint_se_tool}\n".format(joint_beta_tool=joint_beta_tool,
                                                               joint_se_tool=joint_se_tool))
-    """
+
+    ref_r = np.corrcoef(genotypes[:, 0], genotypes[:, 1])
+    # print(ref_r[0, 1])
+
+    joint_beta, joint_se, joint_p = joint_test(gwas=gwas,
+                                               population_size=POPULATION_SIZE,
+                                               ref_population_size=REF_POPULATION_SIZE,
+                                               ref_r=ref_r[0, 1])
+
+    joint_beta = list(joint_beta.flat)
+    logging.info("\nJoint test results: "
+                 "\n\tjoint_beta={joint_beta} "
+                 "\n\tjoint_se={joint_se} "
+                 "\n\tjoint_p={joint_p} \n".format(joint_beta=joint_beta,
+                                                   joint_se=np.diag(joint_se),
+                                                   joint_p=joint_p))
 
 
 if __name__ == "__main__":

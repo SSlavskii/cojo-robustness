@@ -108,7 +108,7 @@ def get_gwas(simulated_data, freq_a1, freq_b1):
     model_a = smf.ols("phenotype ~ snp_a_gen", data=simulated_data).fit()
     model_b = smf.ols("phenotype ~ snp_b_gen", data=simulated_data).fit()
 
-    # model = smf.ols('phenotype ~ snp_a_gen + snp_b_gen', data=simulated_data).fit()
+    model = smf.ols('phenotype ~ snp_a_gen + snp_b_gen', data=simulated_data).fit()
     # print(model.summary())
 
     gwas_dict = {"snp_num": [1, 2],
