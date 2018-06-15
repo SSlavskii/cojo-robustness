@@ -72,10 +72,14 @@ def generate_ped(genotypes, phenotypes):
 
 def main():
 
-    data = {"beta1_single": [], "se1_single": [], "beta2_single": [], "se2_single": [],
-            "beta1_multiple": [], "se1_multiple": [], "beta2_multiple": [], "se2_multiple": [],
-            "beta1_tool": [], "se1_tool": [], "beta2_tool": [], "se2_tool": [],
-            "beta1_sim": [], "se1_sim": [], "beta2_sim": [], "se2_sim": []}
+    data = {"beta1_single": [], "se1_single": [], "p1_single": [],
+            "beta2_single": [], "se2_single": [], "p2_single": [],
+            "beta1_multiple": [], "se1_multiple": [], "p1_multiple": [],
+            "beta2_multiple": [], "se2_multiple": [], "p2_multiple": [], "pJ_multiple": [],
+            "beta1_tool": [], "se1_tool": [], "p1_tool": [],
+            "beta2_tool": [], "se2_tool": [], "p2_tool": [], "pJ_tool": [],
+            "beta1_sim": [], "se1_sim": [], "p1_sim": [],
+            "beta2_sim": [], "se2_sim": [], "p2_sim": [], "pJ_sim": []}
 
     for i in range(100):
 
@@ -118,10 +122,7 @@ def main():
         snp2 = file_gcta_out.readline()
         joint_beta_tool = [float(snp1.split('\t')[10]), float(snp2.split('\t')[10])]
         joint_se_tool = [float(snp1.split('\t')[11]), float(snp2.split('\t')[11])]
-        logging.info("\nJoint test results (tool): "
-                     "\n\tjoint_beta_tool={joint_beta_tool} "
-                     "\n\tjoint_se_tool={joint_se_tool}\n".format(joint_beta_tool=joint_beta_tool,
-                                                                  joint_se_tool=joint_se_tool))
+        joint_p_tool = [float(snp1.split('\t')[12]), float(snp2.split('\t')[12])]
 
         ref_r = np.corrcoef(genotypes[:, 0], genotypes[:, 1])
         # print(ref_r[0, 1])
@@ -130,34 +131,38 @@ def main():
                                                    population_size=POPULATION_SIZE,
                                                    ref_population_size=REF_POPULATION_SIZE,
                                                    ref_r=ref_r[0, 1])
-
         joint_beta = list(joint_beta.flat)
-        logging.info("\nJoint test results:"
-                     "\n\tjoint_beta={joint_beta}"
-                     "\n\tjoint_se={joint_se}"
-                     "\n\tjoint_p={joint_p}\n".format(joint_beta=joint_beta,
-                                                      joint_se=joint_se,
-                                                      joint_p=joint_p))
 
         data["beta1_single"].append(gwas.iloc[0]["beta"])
         data["beta2_single"].append(gwas.iloc[1]["beta"])
         data["se1_single"].append(gwas.iloc[0]["se"])
         data["se2_single"].append(gwas.iloc[1]["se"])
+        data["p1_single"].append(gwas.iloc[0]["p"])
+        data["p2_single"].append(gwas.iloc[1]["p"])
 
         data["beta1_multiple"].append(model.params.snp_a_gen)
         data["beta2_multiple"].append(model.params.snp_b_gen)
         data["se1_multiple"].append(model.bse.snp_a_gen)
         data["se2_multiple"].append(model.bse.snp_b_gen)
+        data["p1_multiple"].append(model.pvalues.snp_a_gen)
+        data["p2_multiple"].append(model.pvalues.snp_b_gen)
+        data["pJ_multiple"].append(model.f_pvalue)
 
         data["beta1_tool"].append(joint_beta_tool[0])
         data["beta2_tool"].append(joint_beta_tool[1])
         data["se1_tool"].append(joint_se_tool[0])
         data["se2_tool"].append(joint_se_tool[1])
+        data["p1_tool"].append(joint_p_tool[0])
+        data["p2_tool"].append(joint_p_tool[1])
+        data["pJ_tool"].append(-1)
 
         data["beta1_sim"].append(joint_beta[0])
         data["beta2_sim"].append(joint_beta[1])
         data["se1_sim"].append(joint_se[0])
         data["se2_sim"].append(joint_se[0])
+        data["p1_sim"].append(chi2.sf((joint_beta[0] / joint_se[0]) ** 2, 1))
+        data["p2_sim"].append(chi2.sf((joint_beta[1] / joint_se[1]) ** 2, 1))
+        data["pJ_sim"].append(joint_p)
 
     data = pd.DataFrame.from_dict(data)
     data.to_csv("../data/testing_joint_implementation.tsv", sep='\t', header=True, index=False)

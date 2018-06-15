@@ -72,7 +72,6 @@ def generate_ped(genotypes, phenotypes):
 
 def main():
 
-    """
     plotting_data = {"beta1": [], "se1": [], "p1": [],
                      "beta2": [], "se2": [], "p2": [],
                      "beta1_tool": [], "se1_tool": [], "p1_tool": [],
@@ -143,7 +142,6 @@ def main():
     plotting_data.to_csv("../data/test_diff_r.tsv", sep='\t', header=True, index=False)
 
     """
-
     logging.info("\n********************************************** \n"
                  "Simulating GWAS using following parameters: \n"
                  "\t POPULATION_SIZE = {population_size} \n"
@@ -217,6 +215,7 @@ def main():
                  "\n\tjoint_p={joint_p} \n".format(joint_beta=joint_beta,
                                                    joint_se=np.diag(joint_se),
                                                    joint_p=joint_p))
+    """
 
 
 if __name__ == "__main__":
