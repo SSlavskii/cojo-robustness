@@ -26,10 +26,11 @@ COEFF_R_D = np.sqrt(REF_FREQ_A1 * (1 - REF_FREQ_A1) * REF_FREQ_B1 * (1 - REF_FRE
 # REF_D = REF_R * COEFF_R_D
 # Restrictions on D: -min(P_A * P_B, P_a * P_b) <= D <= min(P_A * P_b, P_a * P_B)
 
-BETA_A = 0.4
-BETA_B = -0.2
+BETA_A = 0.03
+BETA_B = -0.01
 
 P_VALUE_THRESHOLD = 0.1
+NUMBER_OF_ITERATIONS = 1000
 
 
 def generate_ped(genotypes, phenotypes):
@@ -78,19 +79,45 @@ def main():
                      "beta2_tool": [], "se2_tool": [], "p2_tool": [],
                      "r": []}
 
+    distr_p_value = {"pJ_multiple": [], "pJ_sim": []}
+
+    counter_multiple = 0
+    counter_sim = 0
+
     r_iter = np.linspace(0.6, 0.6, 1)
     for REF_R in r_iter:
         REF_D = REF_R * COEFF_R_D
         print("REF_R =", REF_R)
-        for i in range(3):
-            print("\ti =", i + 1)
-            gwas = simulate_gwas(POPULATION_SIZE, FREQ_A1, FREQ_B1, D, BETA_A, BETA_B)
-            joint_beta, joint_se = joint_test(gwas=gwas,
-                                              population_size=POPULATION_SIZE,
-                                              ref_population_size=REF_POPULATION_SIZE,
-                                              ref_r=REF_R)
-            joint_beta = list(joint_beta.flat)
+        for i in range(NUMBER_OF_ITERATIONS):
+            if i % 100 == 0:
+                print("\ti =", i + 1)
 
+            haplotypes_prob = get_haplotypes_probabilities(D, FREQ_A1, FREQ_B1)
+            haplotypes = get_haplotypes(haplotypes_prob, POPULATION_SIZE)
+            genotypes = get_genotypes(haplotypes, POPULATION_SIZE)
+            genotypes_std = standardise_genotypes(genotypes, FREQ_A1, FREQ_B1)
+            phenotypes = get_phenotypes(genotypes, BETA_A, BETA_B, POPULATION_SIZE)
+
+            simulated_data = pd.DataFrame({"phenotype": phenotypes,
+                                           "snp_a_gen": genotypes_std[:, 0],
+                                           "snp_b_gen": genotypes_std[:, 1]})
+
+            model = smf.ols('phenotype ~ snp_a_gen + snp_b_gen', data=simulated_data).fit()
+            counter_multiple += (model.f_pvalue > 0.05)
+            distr_p_value["pJ_multiple"].append(model.f_pvalue)
+
+            gwas = get_gwas(simulated_data,
+                            freq_a1=1 - sum(genotypes[:, 0]) / (2 * POPULATION_SIZE),
+                            freq_b1=1 - sum(genotypes[:, 1]) / (2 * POPULATION_SIZE))
+
+            joint_beta, joint_se, joint_p = joint_test(gwas=gwas,
+                                                       population_size=POPULATION_SIZE,
+                                                       ref_population_size=REF_POPULATION_SIZE,
+                                                       ref_r=np.corrcoef(genotypes[:, 0], genotypes[:, 1])[0, 1])
+            joint_beta = list(joint_beta.flat)
+            counter_sim += (joint_p > 0.05)
+            distr_p_value["pJ_sim"].append(joint_p)
+            """
             gwas['A1'] = ['A', 'A']
             gwas['A2'] = ['T', 'T']
             gwas['N'] = [POPULATION_SIZE, POPULATION_SIZE]
@@ -116,7 +143,7 @@ def main():
             file_gcta_out.readline()
             snp1 = file_gcta_out.readline()
             snp2 = file_gcta_out.readline()
-
+            
             plotting_data["r"].append(REF_R)
             plotting_data["beta1"].append(joint_beta[0])
             plotting_data["beta2"].append(joint_beta[1])
@@ -130,8 +157,20 @@ def main():
             plotting_data["se2_tool"].append(float(snp2.split('\t')[11]))
             plotting_data["p1_tool"].append(float(snp1.split('\t')[12]))
             plotting_data["p2_tool"].append(float(snp2.split('\t')[12]))
+            """
 
-    print(gwas.head())
+    distr_p_value = pd.DataFrame.from_dict(distr_p_value)
+    distr_p_value.to_csv("../data/distr_p_value", sep='\t', header=True, index=False)
+
+    print("Multiple regression \n second type error =",
+          sum(distr_p_value.pJ_multiple > 0.05) / POPULATION_SIZE * 100,
+          "\n error of error =",
+          np.sqrt(sum(distr_p_value.pJ_multiple <= 0.05) * sum(distr_p_value.pJ_multiple > 0.05)) / POPULATION_SIZE)
+    print("Implemented algorithm \n second type error =",
+          sum(distr_p_value.pJ_sim > 0.05) / POPULATION_SIZE * 100,
+          "\n error of error =",
+          np.sqrt(sum(distr_p_value.pJ_sim <= 0.05) * sum(distr_p_value.pJ_sim > 0.05)) / POPULATION_SIZE)
+    """
     plotting_data = pd.DataFrame.from_dict(plotting_data)
     plotting_data = plotting_data[['r',
                                    'beta1', 'se1', 'p1',
@@ -140,8 +179,7 @@ def main():
                                    'beta2_tool', 'se2_tool', 'p2_tool']]
     print(plotting_data.head())
     plotting_data.to_csv("../data/test_diff_r.tsv", sep='\t', header=True, index=False)
-
-    """
+    
     logging.info("\n********************************************** \n"
                  "Simulating GWAS using following parameters: \n"
                  "\t POPULATION_SIZE = {population_size} \n"

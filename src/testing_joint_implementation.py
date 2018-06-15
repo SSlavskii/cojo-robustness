@@ -26,8 +26,8 @@ COEFF_R_D = np.sqrt(REF_FREQ_A1 * (1 - REF_FREQ_A1) * REF_FREQ_B1 * (1 - REF_FRE
 # REF_D = REF_R * COEFF_R_D
 # Restrictions on D: -min(P_A * P_B, P_a * P_b) <= D <= min(P_A * P_b, P_a * P_B)
 
-BETA_A = 0.4
-BETA_B = -0.2
+BETA_A = 0.0  # 0.4
+BETA_B = 0.0  # -0.2
 
 P_VALUE_THRESHOLD = 0.1
 
