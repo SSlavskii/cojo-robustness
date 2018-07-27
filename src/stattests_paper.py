@@ -30,71 +30,66 @@ NUMBER_OF_ITERATIONS = 1000
 
 def joint_test(gwas, population_size, ref_population_size, ref_r):
 
-    # D_x_std = np.diag(np.diag(np.asmatrix(genotypes_std).transpose() * np.asmatrix(genotypes_std)))
-
-    D_x_hw = np.matrix([[population_size, 0.0],
+    d_x_hw = np.matrix([[population_size, 0.0],
                         [0.0, population_size]])
 
-    # D_w_std = D_x_std.copy()
-    D_w_hw = np.asarray(np.matrix([[ref_population_size, 0.0],
+    d_w_hw = np.asarray(np.matrix([[ref_population_size, 0.0],
                                    [0.0, ref_population_size]]))
 
-    # print("D_w_hw = \n", D_w_hw)
-
-    W_t_W = ref_population_size * np.matrix([[1.0, ref_r],
+    w_t_w = ref_population_size * np.matrix([[1.0, ref_r],
                                              [ref_r, 1.0]])
-    # print("W_t_W = \n", W_t_W)
 
-    # B_std = sqrtm(D_x_std) * inv(sqrtm(D_w_std)) * W_t_W * inv(sqrtm(D_w_std)) * sqrtm(D_x_std)
-    # print("B_std = \n", B_std)
-    B_hw = sqrtm(D_x_hw) * inv(sqrtm(D_w_hw)) * W_t_W * inv(sqrtm(D_w_hw)) * sqrtm(D_x_hw)
-    # print("B_hw = \n", B_hw)
+    b_hw = sqrtm(d_x_hw) * inv(sqrtm(d_w_hw)) * w_t_w * inv(sqrtm(d_w_hw)) * sqrtm(d_x_hw)
 
     beta_gwas = np.array(gwas["beta"])
-    beta_gwas.shape = (2, 1)
+    beta_gwas.shape = (NUMBER_OF_SNPS, 1)
 
-    # joint_beta_std = inv(B_std) * D_x_std * beta_gwas
-    # print("beta_joint_std = \n", joint_beta_std)
-    joint_beta_hw = inv(B_hw) * D_x_hw * beta_gwas
-    joint_beta_hw.shape = (1, 2)
-    # print("beta_joint_hw =", joint_beta_hw)
+    joint_beta_hw = inv(b_hw) * d_x_hw * beta_gwas
+    joint_beta_hw.shape = (1, NUMBER_OF_SNPS)
 
-    beta_gwas.shape = (1, 2)
+    beta_gwas.shape = (1, NUMBER_OF_SNPS)
 
-    y_t_y = np.mean(np.multiply(D_w_hw.diagonal(), np.square(gwas["se"])) * (population_size - 1) +
-                    np.multiply(D_w_hw.diagonal(), np.square(gwas["beta"])))
+    y_t_y = np.mean(np.multiply(d_w_hw.diagonal(), np.square(gwas["se"])) * (population_size - 1) +
+                    np.multiply(d_w_hw.diagonal(), np.square(gwas["beta"])))
 
-    beta_gwas.shape = (2, 1)
-    sigma_sqr_joint = float((y_t_y - np.dot(np.dot(joint_beta_hw, D_w_hw), beta_gwas)) /
+    beta_gwas.shape = (NUMBER_OF_SNPS, 1)
+    sigma_sqr_joint = float((y_t_y - np.dot(np.dot(joint_beta_hw, d_w_hw), beta_gwas)) /
                             (population_size - NUMBER_OF_SNPS))
 
-    # sigma_sqr_joint_ph = float((np.dot(phenotypes, phenotypes) - np.dot(np.dot(joint_beta_hw, D_w_hw), beta_gwas)) /
-    #                            (POPULATION_SIZE - NUMBER_OF_SNPS))
-
-    joint_se = np.sqrt(np.diag(sigma_sqr_joint * inv(B_hw)))
-    # print("joint_se =", np.diag(joint_se))
+    joint_se = np.sqrt(np.diag(sigma_sqr_joint * inv(b_hw)))
     joint_beta_hw.shape = (1, 2)
-    # print("z_scores =", np.divide(joint_beta_hw, np.diag(joint_se)))
-    # print(float(np.dot(np.dot(joint_beta_hw, inv(np.diag(joint_se))), joint_beta_hw.T)))
-    p_value_joint = chi2.sf(float(np.dot(np.dot(joint_beta_hw, inv(sigma_sqr_joint * inv(B_hw))), joint_beta_hw.T)), 2)
+
+    p_value_joint = chi2.sf(float(np.dot(np.dot(joint_beta_hw, inv(sigma_sqr_joint * inv(b_hw))), joint_beta_hw.T)), 2)
     return joint_beta_hw, joint_se, p_value_joint
 
 
-def conditional_test(gwas, y, r_ref, ref_freq_a1, population_size, ref_population_size):
-    B1 = 2 * ref_freq_a1 * (1 - ref_freq_a1) * ref_population_size * ref_population_size ** 2
-    B2 = 2 * ref_freq_a1 * (1 - ref_freq_a1) * ref_population_size * ref_population_size ** 2
-    D1_x = population_size
-    D2_x = population_size
+def conditional_test(gwas, b_prev_est_1, ref_r, ref_freq_a1, population_size, ref_population_size):
+    b1 = 2 * ref_freq_a1 * (1 - ref_freq_a1) * ref_population_size * ref_population_size ** 2
+    b2 = 2 * ref_freq_a1 * (1 - ref_freq_a1) * ref_population_size * ref_population_size ** 2
+    d1_x = population_size
+    d2_x = population_size
+    d_w_hw = np.asarray(np.matrix([[ref_population_size, 0.0],
+                                   [0.0, ref_population_size]]))
+    w_t_w = ref_population_size * np.matrix([[1.0, ref_r],
+                                             [ref_r, 1.0]])
     c11 = 2 * FREQ_A1 * (1 - FREQ_A1) * population_size
     c22 = 2 * FREQ_B1 * (1 - FREQ_B1) * population_size
     c21 = 2 * population_size / ref_population_size * np.sqrt(FREQ_A1)
-    C = np.matrix([[c11, c21],
+    c = np.matrix([[c11, c21],
                    [c21, c22]])
 
-    con_beta21 = (1 / B2) * D2_x * gwas["beta"][2] - (1 / B2) * C * (1 / B1) * D1_x * gwas["beta"][1]
-    sigma_sqr_cond = (np.dot(y, y) - 1.0 - con_beta21 * 1.0) / (population_size - 2)
-    con_se = 0.0 * sigma_sqr_cond
-    return con_beta21, con_se
+    cond_beta21 = (1 / b2) * d2_x * gwas["beta"][2] - (1 / b2) * c * (1 / b1) * d1_x * gwas["beta"][1]
+
+    y_t_y = np.mean(np.multiply(d_w_hw.diagonal(), np.square(gwas["se"])) * (population_size - 1) +
+                    np.multiply(d_w_hw.diagonal(), np.square(gwas["beta"])))
+
+    sigma_sqr_cond = (y_t_y - b_prev_est_1 * d1_x * gwas["beta"][1] - cond_beta21 * d2_x * gwas["beta"][2]) / \
+                     (population_size - 2)
+
+    con_se = np.sqrt(sigma_sqr_cond / b2 - sigma_sqr_cond / b2 * c / b1 * c.T / b2)
+
+    # p_value_cond = chi2.sf(float(np.dot(np.dot(cond_beta21, inv(sigma_sqr_cond * inv(b_hw))), cond_beta21.T)), 2)
+    return cond_beta21, con_se
 
 
 """

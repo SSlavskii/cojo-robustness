@@ -4,13 +4,17 @@ NUMBER_OF_SNPS = 2
 POPULATION_SIZE = 10000  # 100000
 REF_POPULATION_SIZE = 10000  # 100000
 
-FREQ_A1 = 0.7
-FREQ_B1 = 0.6
+FREQ_A1 = 0.6
+FREQ_B1 = 0.5
+# FREQ_B1 = 0.6
 
-REF_FREQ_A1 = 0.7
-REF_FREQ_B1 = 0.6
+REF_FREQ_A1 = 0.6
+REF_FREQ_B1 = 0.5
+# REF_FREQ_B1 = 0.6
 
-R_PAR = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
+R_PAR = [0.7]
+# R_PAR = [0.3, 0.4, 0.5, 0.6, 0.7]
+# NEG_R_PAR = [element * -1 for element in R_PAR]
 # D = R * np.sqrt(FREQ_A1 * (1 - FREQ_A1) * FREQ_B1 * (1 - FREQ_B1))
 
 # REF_R = 0.5
