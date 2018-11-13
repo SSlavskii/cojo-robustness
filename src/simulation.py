@@ -30,13 +30,14 @@ def get_haplotypes(haplotypes_prob, population_size):
     possible_haplotypes = [11, 12, 21, 22]
     haplotypes = np.random.choice(possible_haplotypes,
                                   size=2 * population_size,
-                                  p=list(haplotypes_prob.values()))
+                                  p=[haplotypes_prob.get(haplotype)
+                                     for haplotype in ["a1_b1", "a1_b2", "a2_b1", "a2_b2"]])
 
     return haplotypes
 
 
 def get_genotypes(haplotypes, population_size):
-
+# -2 because AA - 0, AB - 1, BB=2
     genotypes_a = haplotypes[:population_size] // 10 + haplotypes[population_size:] // 10 - 2
     genotypes_b = haplotypes[:population_size] % 10 + haplotypes[population_size:] % 10 - 2
 
