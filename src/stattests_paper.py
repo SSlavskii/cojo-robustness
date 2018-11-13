@@ -60,6 +60,7 @@ def joint_test(gwas, population_size, ref_population_size, ref_r):
     joint_beta_hw.shape = (1, 2)
 
     p_value_joint = chi2.sf(float(np.dot(np.dot(joint_beta_hw, inv(sigma_sqr_joint * inv(b_hw))), joint_beta_hw.T)), 2)
+
     return joint_beta_hw, joint_se, p_value_joint
 
 

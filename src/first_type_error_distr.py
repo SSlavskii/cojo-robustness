@@ -1,4 +1,5 @@
 from src.stattests_paper import *
+from scipy.stats import chi2
 
 NUMBER_OF_SNPS = 2
 POPULATION_SIZE = 10000  # 100000
@@ -22,16 +23,16 @@ COEFF_R_D = np.sqrt(REF_FREQ_A1 * (1 - REF_FREQ_A1) * REF_FREQ_B1 * (1 - REF_FRE
 # REF_D = REF_R * COEFF_R_D
 # Restrictions on D: -min(P_A * P_B, P_a * P_b) <= D <= min(P_A * P_b, P_a * P_B)
 
-BETA_A = 0.0  # 0.03
+BETA_A = 0.01  # 0.03
 BETA_B = 0.0  # -0.01
 
 P_VALUE_THRESHOLD = 0.1
-NUMBER_OF_ITERATIONS = 100
+NUMBER_OF_ITERATIONS = 1000
 
 
 def main():
 
-    results = {"sim_r": [], "ref_r": [], "joint_p": [], "real_r": []}
+    results = {"sim_r": [], "ref_r": [], "joint_p": [], "real_r": [], "joint_p_1": [], "joint_p_2": []}
 
     for R in R_PAR:
         print("\tr =", R)
@@ -57,25 +58,23 @@ def main():
                             freq_a1=1 - sum(genotypes[:, 0]) / (2 * POPULATION_SIZE),
                             freq_b1=1 - sum(genotypes[:, 1]) / (2 * POPULATION_SIZE))
 
-            n_points = 100
+            n_points = 50
             r_real = round(np.corrcoef(genotypes[:, 0], genotypes[:, 1])[0, 1], 3)
-            # n1 = int(N_POINTS / (1 + (1.0 - r_real) / (r_real + 1.0)))
-            # n2 = N_POINTS - n1
-            # r_iter_left = np.linspace(-1.0, r_real, n1)
-            # r_iter_right = np.linspace(r_real, 1.0, n2 + 1)
-            # r_iter = np.concatenate((r_iter_left, r_iter_right), axis=0)
 
-            for delta in np.linspace(-2.0, 2.0, n_points):
-                ref_r = r_real + delta
+            for ref_r in np.linspace(-1.0, 1.0, n_points):
+                ref_r = round(ref_r, 3)
                 try:
                     joint_beta, joint_se, joint_p = joint_test(gwas=gwas,
                                                                population_size=POPULATION_SIZE,
                                                                ref_population_size=REF_POPULATION_SIZE,
                                                                ref_r=ref_r)
+                    #print(joint_beta, joint_se)
                     results["sim_r"].append(R)
                     results["ref_r"].append(ref_r)
                     results["joint_p"].append(joint_p)
                     results["real_r"].append(r_real)
+                    results["joint_p_1"].append(chi2.sf((joint_beta[0, 0]/joint_se[0])**2, 1))
+                    results["joint_p_2"].append(chi2.sf((joint_beta[0, 1]/joint_se[1])**2, 1))
 
                 except np.linalg.linalg.LinAlgError:
                     pass
@@ -97,8 +96,8 @@ def main():
             """
 
         first_type_error = pd.DataFrame.from_dict(results)
-        first_type_error["delta_r"] = first_type_error["real_r"] - first_type_error["ref_r"]
-        first_type_error.to_csv("../out/first_type_error.tsv", sep='\t', header=True, index=False)
+        first_type_error["delta_r"] = first_type_error["sim_r"] - first_type_error["ref_r"]
+        first_type_error.to_csv("../out/first_type_error_b_0.01.tsv", sep='\t', header=True, index=False)
 
     """
     print("Multiple regression \n second type error =",
