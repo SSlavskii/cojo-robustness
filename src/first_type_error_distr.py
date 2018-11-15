@@ -23,8 +23,9 @@ COEFF_R_D = np.sqrt(REF_FREQ_A1 * (1 - REF_FREQ_A1) * REF_FREQ_B1 * (1 - REF_FRE
 # REF_D = REF_R * COEFF_R_D
 # Restrictions on D: -min(P_A * P_B, P_a * P_b) <= D <= min(P_A * P_b, P_a * P_B)
 
-BETA_A = 0.01  # 0.03
+BETA_A = 10/np.sqrt(POPULATION_SIZE)  # 0.03
 BETA_B = 0.0  # -0.01
+print("BETA_A:", BETA_A)
 
 P_VALUE_THRESHOLD = 0.1
 NUMBER_OF_ITERATIONS = 1000
@@ -37,7 +38,6 @@ def main():
     for R in R_PAR:
         print("\tr =", R)
         D = R * np.sqrt(FREQ_A1 * (1 - FREQ_A1) * FREQ_B1 * (1 - FREQ_B1))
-
         for i in range(NUMBER_OF_ITERATIONS):
             if i % 100 == 0:
                 print("\t\ti =", i + 1)
@@ -46,7 +46,7 @@ def main():
             haplotypes = get_haplotypes(haplotypes_prob, POPULATION_SIZE)
             genotypes = get_genotypes(haplotypes, POPULATION_SIZE)
             genotypes_std = standardise_genotypes(genotypes, FREQ_A1, FREQ_B1)
-            phenotypes = get_phenotypes(genotypes, BETA_A, BETA_B, POPULATION_SIZE)
+            phenotypes = get_phenotypes(genotypes_std, BETA_A, BETA_B, POPULATION_SIZE)
 
             simulated_data = pd.DataFrame({"phenotype": phenotypes,
                                            "snp_a_gen": genotypes_std[:, 0],
@@ -61,14 +61,15 @@ def main():
             n_points = 50
             r_real = round(np.corrcoef(genotypes[:, 0], genotypes[:, 1])[0, 1], 3)
 
-            for ref_r in np.linspace(-1.0, 1.0, n_points):
+            #for ref_r in np.linspace(-1.0, 1.0, n_points):
+            for ref_r in [r_real]:
                 ref_r = round(ref_r, 3)
                 try:
                     joint_beta, joint_se, joint_p = joint_test(gwas=gwas,
                                                                population_size=POPULATION_SIZE,
                                                                ref_population_size=REF_POPULATION_SIZE,
                                                                ref_r=ref_r)
-                    #print(joint_beta, joint_se)
+                    print(gwas, joint_beta, joint_se)
                     results["sim_r"].append(R)
                     results["ref_r"].append(ref_r)
                     results["joint_p"].append(joint_p)
@@ -97,7 +98,7 @@ def main():
 
         first_type_error = pd.DataFrame.from_dict(results)
         first_type_error["delta_r"] = first_type_error["sim_r"] - first_type_error["ref_r"]
-        first_type_error.to_csv("../out/first_type_error_b_0.01.tsv", sep='\t', header=True, index=False)
+        first_type_error.to_csv("../out/first_type_error_b.tsv", sep='\t', header=True, index=False)
 
     """
     print("Multiple regression \n second type error =",

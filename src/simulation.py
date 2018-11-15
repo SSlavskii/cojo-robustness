@@ -37,7 +37,7 @@ def get_haplotypes(haplotypes_prob, population_size):
 
 
 def get_genotypes(haplotypes, population_size):
-# -2 because AA - 0, AB - 1, BB=2
+    # -2 because AA - 0, AB - 1, BB=2
     genotypes_a = haplotypes[:population_size] // 10 + haplotypes[population_size:] // 10 - 2
     genotypes_b = haplotypes[:population_size] % 10 + haplotypes[population_size:] % 10 - 2
 
@@ -48,7 +48,6 @@ def standardise_genotypes(genotypes, freq_a1, freq_b1):
 
     genotypes_a = (genotypes[:, 0] - 2 * (1 - freq_a1)) / np.sqrt(2 * freq_a1 * (1 - freq_a1))
     genotypes_b = (genotypes[:, 1] - 2 * (1 - freq_b1)) / np.sqrt(2 * freq_b1 * (1 - freq_b1))
-
     return np.column_stack((genotypes_a, genotypes_b))
 
 
@@ -61,15 +60,8 @@ def standardise_genotypes_paper(genotypes, freq_a1, freq_b1):
 
 
 def get_phenotypes(genotypes, beta_a, beta_b, population_size):
-
-    mse_genotypes_a = np.mean((genotypes[:, 0] - np.mean(genotypes[:, 0])) ** 2)
-    mse_genotypes_b = np.mean((genotypes[:, 1] - np.mean(genotypes[:, 1])) ** 2)
-
-    sigma_err = 1.0 - mse_genotypes_a * beta_a ** 2 - mse_genotypes_b * beta_b ** 2
-
-    phenotypes = genotypes[:, 0] * beta_a + genotypes[:, 1] * beta_b + np.random.normal(0,
-                                                                                        np.sqrt(sigma_err),
-                                                                                        population_size)
+    sigma_err = 1.0 - beta_a ** 2 - beta_b ** 2
+    phenotypes = genotypes[:, 0] * beta_a + genotypes[:, 1] * beta_b + np.sqrt(sigma_err) * np.random.normal(0, 1, population_size)
     return phenotypes
 
 
@@ -92,7 +84,7 @@ def get_simulated_data(population_size, freq_a1, freq_b1, d, beta_a, beta_b):
     haplotypes = get_haplotypes(haplotypes_prob, population_size)
     genotypes = get_genotypes(haplotypes, population_size)
     genotypes_std = standardise_genotypes(genotypes, freq_a1, freq_b1)
-    phenotypes = get_phenotypes(genotypes, beta_a, beta_b, population_size)
+    phenotypes = get_phenotypes(genotypes_std, beta_a, beta_b, population_size)
 
     # print("G_std^T G_std = \n", np.asmatrix(genotypes_std).transpose() * np.asmatrix(genotypes_std))
     # print("G^T G = \n", np.asmatrix(genotypes).transpose() * np.asmatrix(genotypes))
